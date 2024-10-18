@@ -27,7 +27,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: abinesh/flaskapp:latest
+          tags: aibinesan/flaskapp:latest
           
       - name: deploying
         uses: appleboy/ssh-action@v0.1.8
@@ -38,7 +38,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             # sudo mkdir test.txt
-            docker image pull abinesh/flaskapp:latest
+            docker image pull aibinesan/flaskapp:latest
             docker container stop flask
             docker container rm flask
-            docker container run -d --name flask -p 80:5000 abinesh/flaskapp
+            docker container run -d --name flask -p 80:5000 aibinesan/flaskapp
