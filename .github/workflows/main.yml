@@ -3,8 +3,8 @@ name: Docker Image build
 on:
   push:
     branches: [ "mai" ]
-  pull_request:
-    branches: [ "mai" ]
+  # pull_request:
+  #   branches: [ "mai" ]
 
 jobs:
 
