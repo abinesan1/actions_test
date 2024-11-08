@@ -2,7 +2,7 @@ name: Docker Image build
 
 on:
   push:
-    branches: [ "main1" ]
+    branches: [ "main" ]
   # pull_request:
   #   branches: [ "mai" ]
 
