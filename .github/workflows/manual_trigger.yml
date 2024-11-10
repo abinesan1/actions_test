@@ -161,13 +161,13 @@ jobs:
         # npm run build
         # kubectl apply -f deployment.yaml
 
-    - name: Save rollback history to Git repository
+    - name: Track current deployment and update rollback history
       run: |
         # Set the committer's name and email dynamically based on the GitHub context
         git config user.name "${{ github.actor }}"
         git config user.email "${{ github.actor }}@users.noreply.github.com"
         
-        # Ensure the rollback-history.txt file is created or modified
+        # Create or update rollback-history.txt file
         if [ -f rollback-history.txt ]; then
           echo "rollback-history.txt exists, adding to Git..."
         else
@@ -177,14 +177,17 @@ jobs:
           echo "Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
         fi
         
+        # Track the current state in the rollback history
+        # Add the current commit as the previous commit in the history
+        echo "Previous Commit: $(git rev-parse HEAD)" >> rollback-history.txt
+        echo "Previous Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
+        echo "Previous Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
+
         # Add the rollback-history.txt file to Git index
         git add rollback-history.txt
 
-        # Check if the file is staged
-        git status
-        
         # Commit the changes with a message
-        git commit -m "Update rollback history"
+        git commit -m "Update rollback history with current deployment"
 
-        # Push the changes back to the repository using the GITHUB_TOKEN
+        # Push the changes back to the repository
         git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
