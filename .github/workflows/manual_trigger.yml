@@ -77,27 +77,33 @@ jobs:
         echo "Git Commit ID: $COMMIT_ID"
         echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
         
-    - name: Retrieve last deployment history (if available)
-      id: deployment_history
+    - name: Retrieve last deployment and rollback details (if any)
+      id: rollback_history
       run: |
-        # Check if a deployment history file exists
-        if [[ -f deployment-history.txt ]]; then
-          # Read the last deployment details
-          LAST_COMMIT=$(head -n 1 deployment-history.txt)
-          LAST_ENVIRONMENT=$(sed -n '2p' deployment-history.txt)
-          LAST_VERSION=$(sed -n '3p' deployment-history.txt)
-          echo "Last deployed commit: $LAST_COMMIT"
-          echo "Last deployed environment: $LAST_ENVIRONMENT"
-          echo "Last deployed version: $LAST_VERSION"
+        if [[ -f rollback-history.txt ]]; then
+          LAST_ROLLBACK_COMMIT=$(head -n 1 rollback-history.txt)
+          LAST_ROLLBACK_ENVIRONMENT=$(sed -n '2p' rollback-history.txt)
+          LAST_ROLLBACK_VERSION=$(sed -n '3p' rollback-history.txt)
+          echo "Last rollback commit: $LAST_ROLLBACK_COMMIT"
+          echo "Last rollback environment: $LAST_ROLLBACK_ENVIRONMENT"
+          echo "Last rollback version: $LAST_ROLLBACK_VERSION"
           
-          # Check if the current trigger matches the last deployment
-          if [[ "$LAST_COMMIT" == "$COMMIT_ID" && "$LAST_ENVIRONMENT" == "${{ github.event.inputs.environment }}" && "$LAST_VERSION" == "${{ github.event.inputs.version }}" ]]; then
-            echo "This deployment is identical to the previous one. Skipping deployment."
-            exit 0  # Exit if there is no difference in commit, environment, and version
+          if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
+            echo "Rolling back to provided commit ID: ${{ github.event.inputs.commit_id }}"
+            ROLLBACK_COMMIT="${{ github.event.inputs.commit_id }}"
+          else
+            echo "Rolling back to last successful commit: $LAST_ROLLBACK_COMMIT"
+            ROLLBACK_COMMIT="$LAST_ROLLBACK_COMMIT"
           fi
         else
-          echo "No previous deployment found. Proceeding with deployment."
+          echo "No previous rollback found. Proceeding with the latest commit."
+          ROLLBACK_COMMIT="HEAD"
         fi
+
+    - name: Rollback to specified commit
+      run: |
+        echo "Checking out commit ID: $ROLLBACK_COMMIT"
+        git checkout $ROLLBACK_COMMIT
         
     - name: Rollback to specified commit (if any)
       run: |
@@ -151,5 +157,11 @@ jobs:
         # npm install
         # npm run build
         # kubectl apply -f deployment.yaml
-
+    - name: Save rollback history to Git repository
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add rollback-history.txt
+        git commit -m "Update rollback history"
+        git push origin main  # Replace with your branch if needed
     # Additional rollback or deployment steps can go here
