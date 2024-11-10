@@ -19,6 +19,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
     
     steps:
     - name: Print GitHub Actor (GitHub username)
@@ -157,6 +160,7 @@ jobs:
         # npm install
         # npm run build
         # kubectl apply -f deployment.yaml
+
     - name: Save rollback history to Git repository
       run: |
         # Set the committer's name and email dynamically based on the GitHub context
@@ -182,5 +186,5 @@ jobs:
         # Commit the changes with a message
         git commit -m "Update rollback history"
 
-        # Push the changes back to the repository
-        git push origin main  # Replace with your branch if needed
+        # Push the changes back to the repository using the GITHUB_TOKEN
+        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
