@@ -1,0 +1,29 @@
+name: Manual Workflow with Input
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which environment to deploy to (e.g., staging or production)'
+        required: true
+        default: 'staging'
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    - name: Print input values
+      run: |
+        echo "Deploying to environment: ${{ github.event.inputs.environment }}"
+        echo "Deploying version: ${{ github.event.inputs.version }}"
+
+    # You can add additional steps to perform the actual deployment here
+    # based on the values provided by the inputs.
