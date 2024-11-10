@@ -21,55 +21,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Print GitHub Actor (GitHub username)
-      run: |
-        echo "GitHub Username (actor): ${{ github.actor }}"
-
-    - name: Fetch Git user name from Git config
-      run: |
-        # Fetch the configured Git user name
-        GIT_USER_NAME=$(git config user.name)
-        echo "Git User Name: $GIT_USER_NAME"
-
-    - name: Print both GitHub username and Git user name
-      run: |
-        # Print both the GitHub actor and the Git user name
-        echo "GitHub Username (actor): ${{ github.actor }}"
-        echo "Git User Name: $GIT_USER_NAME"
     - name: Check if user is authorized
       run: |
         # Define allowed users (GitHub usernames)
-        ALLOWED_USERS=("abinesan1" "user2" "user3")
+        ALLOWED_USERS=("user1" "user2" "user3")
         
         # Check if the current user (github.actor) is in the allowed users list
         if [[ ! " ${ALLOWED_USERS[@]} " =~ " ${GITHUB_ACTOR} " ]]; then
           echo "You are not authorized to trigger this workflow."
           exit 1  # Fail the job if the user is not authorized
         fi
-        
-    - name: Ensure only main branch is allowed
-      run: |
-        # Ensure the branch is 'main' and fail the workflow if not
-        if [[ "${GITHUB_REF#refs/heads/}" != "main" ]]; then
-          echo "This workflow can only be triggered from the 'main' branch."
-          exit 1
-        fi
-    - name: Validate commit_id (if provided)
-      run: |
-        # If a commit_id is provided, validate that it is a valid commit hash
-        if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
-          COMMIT_ID="${{ github.event.inputs.commit_id }}"
-          echo "Validating commit ID: $COMMIT_ID"
-          # Check if commit_id is a valid git commit hash (basic validation)
-          if [[ ! "$COMMIT_ID" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Invalid commit ID: $COMMIT_ID. It must be a valid 40-character commit hash."
-            exit 1
-          fi
-        fi
-        
+
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
@@ -94,7 +56,7 @@ jobs:
 
     - name: Print input values and commit ID
       run: |
-        # echo "Deploying to environment: ${{ github.event.inputs.environment }}"
+        echo "Deploying to environment: ${{ github.event.inputs.environment }}"
         echo "Deploying version: ${{ github.event.inputs.version }}"
         echo "Git Commit ID: ${{ env.COMMIT_ID }}"  # Access the commit ID from the environment variable
         echo "Triggered by user: ${{ github.actor }}"  # Print the username who triggered the workflow
