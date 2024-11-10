@@ -24,6 +24,11 @@ jobs:
       contents: write
     
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
+      
     - name: Print GitHub Actor (GitHub username)
       run: |
         echo "GitHub Username (actor): ${{ github.actor }}"
@@ -68,11 +73,7 @@ jobs:
           fi
         fi
       
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
-
+   
     - name: Get Git commit ID
       run: |
         # Retrieve the current commit ID
@@ -80,28 +81,39 @@ jobs:
         echo "Git Commit ID: $COMMIT_ID"
         echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
         
-    - name: Retrieve last deployment and rollback details (if any)
-      id: rollback_history
+    - name: Checkout specific commit if provided, or latest commit
       run: |
-        if [[ -f rollback-history.txt ]]; then
-          LAST_ROLLBACK_COMMIT=$(head -n 1 rollback-history.txt)
-          LAST_ROLLBACK_ENVIRONMENT=$(sed -n '2p' rollback-history.txt)
-          LAST_ROLLBACK_VERSION=$(sed -n '3p' rollback-history.txt)
-          echo "Last rollback commit: $LAST_ROLLBACK_COMMIT"
-          echo "Last rollback environment: $LAST_ROLLBACK_ENVIRONMENT"
-          echo "Last rollback version: $LAST_ROLLBACK_VERSION"
-          
-          if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
-            echo "Rolling back to provided commit ID: ${{ github.event.inputs.commit_id }}"
-            ROLLBACK_COMMIT="${{ github.event.inputs.commit_id }}"
-          else
-            echo "Rolling back to last successful commit: $LAST_ROLLBACK_COMMIT"
-            ROLLBACK_COMMIT="$LAST_ROLLBACK_COMMIT"
-          fi
+        if [ -n "${{ github.event.inputs.commit_id }}" ]; then
+          echo "Checking out the commit ID: ${{ github.event.inputs.commit_id }}"
+          git checkout ${{ github.event.inputs.commit_id }}
+          echo "COMMIT_ID=${{ github.event.inputs.commit_id }}" >> $GITHUB_ENV  # Store commit ID in environment variable
+          echo "Git Roll back Commit ID: $COMMIT_ID"
         else
-          echo "No previous rollback found. Proceeding with the latest commit."
-          ROLLBACK_COMMIT="HEAD"
+          echo "No commit ID provided. Checking out the latest commit (HEAD)."
         fi
+        
+    # - name: Retrieve last deployment and rollback details (if any)
+    #   id: rollback_history
+    #   run: |
+    #     if [[ -f rollback-history.txt ]]; then
+    #       LAST_ROLLBACK_COMMIT=$(head -n 1 rollback-history.txt)
+    #       LAST_ROLLBACK_ENVIRONMENT=$(sed -n '2p' rollback-history.txt)
+    #       LAST_ROLLBACK_VERSION=$(sed -n '3p' rollback-history.txt)
+    #       echo "Last rollback commit: $LAST_ROLLBACK_COMMIT"
+    #       echo "Last rollback environment: $LAST_ROLLBACK_ENVIRONMENT"
+    #       echo "Last rollback version: $LAST_ROLLBACK_VERSION"
+          
+    #       if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
+    #         echo "Rolling back to provided commit ID: ${{ github.event.inputs.commit_id }}"
+    #         ROLLBACK_COMMIT="${{ github.event.inputs.commit_id }}"
+    #       else
+    #         echo "Rolling back to last successful commit: $LAST_ROLLBACK_COMMIT"
+    #         ROLLBACK_COMMIT="$LAST_ROLLBACK_COMMIT"
+    #       fi
+    #     else
+    #       echo "No previous rollback found. Proceeding with the latest commit."
+    #       ROLLBACK_COMMIT="HEAD"
+    #     fi
         
     - name: Print input values and commit ID
       run: |
@@ -136,48 +148,42 @@ jobs:
           docker container stop flask
           docker container rm flask
           docker container run -d --name flask -p 80:5000 aibinesan/flaskapp:${{ env.COMMIT_ID }}
-    - name: Deploy application (or run your deployment steps)
-      run: |
-        echo "Deploying application..."
-        # Add your deployment commands here, e.g.:
-        # npm install
-        # npm run build
-        # kubectl apply -f deployment.yaml
+          
 
-    - name: Track current deployment and update rollback history
-      run: |
-        # Set the committer's name and email dynamically based on the GitHub context
-        git config user.name "${{ github.actor }}"
-        git config user.email "${{ github.actor }}@users.noreply.github.com"
+    # - name: Track current deployment and update rollback history
+    #   run: |
+    #     # Set the committer's name and email dynamically based on the GitHub context
+    #     git config user.name "${{ github.actor }}"
+    #     git config user.email "${{ github.actor }}@users.noreply.github.com"
         
-        # Get the current commit ID and message
-        CURRENT_COMMIT=$(git rev-parse HEAD)
-        CURRENT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-        CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+    #     # Get the current commit ID and message
+    #     CURRENT_COMMIT=$(git rev-parse HEAD)
+    #     CURRENT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+    #     CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 
-        # Create or update rollback-history.txt file
-        if [ -f rollback-history.txt ]; then
-          echo "rollback-history.txt exists, adding to Git..."
-        else
-          echo "rollback-history.txt not found, creating new file..."
-        fi
+    #     # Create or update rollback-history.txt file
+    #     if [ -f rollback-history.txt ]; then
+    #       echo "rollback-history.txt exists, adding to Git..."
+    #     else
+    #       echo "rollback-history.txt not found, creating new file..."
+    #     fi
 
-        # Log current deployment details and append date/time
-        echo "Date: $CURRENT_DATE" >> rollback-history.txt
-        echo "Current Commit: $CURRENT_COMMIT" >> rollback-history.txt
-        echo "Commit Message: $CURRENT_COMMIT_MESSAGE" >> rollback-history.txt
-        echo "Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
-        echo "Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
+    #     # Log current deployment details and append date/time
+    #     echo "Date: $CURRENT_DATE" >> rollback-history.txt
+    #     echo "Current Commit: $CURRENT_COMMIT" >> rollback-history.txt
+    #     echo "Commit Message: $CURRENT_COMMIT_MESSAGE" >> rollback-history.txt
+    #     echo "Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
+    #     echo "Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
         
-        # Track changes in the repository by using git diff (to show what changed)
-        CHANGES=$(git diff --name-status HEAD~1..HEAD)
-        echo "Changes: $CHANGES" >> rollback-history.txt
+    #     # Track changes in the repository by using git diff (to show what changed)
+    #     CHANGES=$(git diff --name-status HEAD~1..HEAD)
+    #     echo "Changes: $CHANGES" >> rollback-history.txt
 
-        # Add the rollback-history.txt file to Git index
-        git add rollback-history.txt
+    #     # Add the rollback-history.txt file to Git index
+    #     git add rollback-history.txt
 
-        # Commit the changes with a message
-        git commit -m "Update rollback history with current deployment"
+    #     # Commit the changes with a message
+    #     git commit -m "Update rollback history with current deployment"
 
-        # Push the changes back to the repository
-        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+    #     # Push the changes back to the repository
+    #     git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
