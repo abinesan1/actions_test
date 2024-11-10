@@ -21,24 +21,21 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
     - name: Print GitHub Actor (GitHub username)
       run: |
         echo "GitHub Username (actor): ${{ github.actor }}"
 
-    - name: Fetch Git user name from Git config
-      run: |
-        # Fetch the configured Git user name
-        GIT_USER_NAME=$(git config user.name)
-        echo "Git User Name: $GIT_USER_NAME"
+    # - name: Fetch Git user name from Git config
+    #   run: |
+    #     # Fetch the configured Git user name
+    #     GIT_USER_NAME=$(git config user.name)
+    #     echo "Git User Name: $GIT_USER_NAME"
     
-    - name: Print both GitHub username and Git user name
-      run: |
-        # Print both the GitHub actor and the Git user name
-        echo "GitHub Username (actor): ${{ github.actor }}"
-        echo "Git User Name: $GIT_USER_NAME"
+    # - name: Print both GitHub username and Git user name
+    #   run: |
+    #     # Print both the GitHub actor and the Git user name
+    #     echo "GitHub Username (actor): ${{ github.actor }}"
+    #     echo "Git User Name: $GIT_USER_NAME"
     
     - name: Check if user is authorized
       run: |
