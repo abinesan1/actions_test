@@ -24,7 +24,7 @@ jobs:
     - name: Check if user is authorized
       run: |
         # Define allowed users (GitHub usernames)
-        ALLOWED_USERS=("abinesan" "user2" "user3")
+        ALLOWED_USERS=("abinesan1" "user2" "user3")
         
         # Check if the current user (github.actor) is in the allowed users list
         if [[ ! " ${ALLOWED_USERS[@]} " =~ " ${GITHUB_ACTOR} " ]]; then
