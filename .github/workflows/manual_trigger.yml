@@ -100,7 +100,9 @@ jobs:
         # If a commit_id is provided, use that to checkout the commit
         if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
           echo "Rolling back to commit ID: ${{ github.event.inputs.commit_id }}"
-          git checkout ${{ github.event.inputs.commit_id }}  # Checkout the specified commit
+          # git checkout ${{ github.event.inputs.commit_id }}  # Checkout the specified commit
+          echo "COMMIT_ID=${{ github.event.inputs.commit_id }}" >> $GITHUB_ENV
+          echo "Git Roll Back Commit ID: $COMMIT_ID"
         else
           echo "No commit ID provided. Using the latest commit: $COMMIT_ID"
         fi
@@ -111,7 +113,33 @@ jobs:
         echo "Deploying version: ${{ github.event.inputs.version }}"
         echo "Git Commit ID: ${{ env.COMMIT_ID }}"  # Access the commit ID from the environment variable
         echo "Triggered by user: ${{ github.actor }}"  # Print the username who triggered the workflow
-
+        
+    - name: login to hub  
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: aibinesan/flaskapp:latest
+        
+    - name: deploying
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        password: ${{ secrets.SSH_PASSWORD }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          # sudo mkdir test.txt
+          docker image pull aibinesan/flaskapp:${{ env.COMMIT_ID }}
+          docker container stop flask
+          docker container rm flask
+          docker container run -d --name flask -p 80:5000 aibinesan/flaskapp
     - name: Deploy application (or run your deployment steps)
       run: |
         echo "Deploying application..."
