@@ -31,7 +31,15 @@ jobs:
           echo "You are not authorized to trigger this workflow."
           exit 1  # Fail the job if the user is not authorized
         fi
-
+        
+    - name: Ensure only main branch is allowed
+      run: |
+        # Ensure the branch is 'main' and fail the workflow if not
+        if [[ "${GITHUB_REF#refs/heads/}" != "main" ]]; then
+          echo "This workflow can only be triggered from the 'main' branch."
+          exit 1
+        fi
+        
     - name: Checkout repository
       uses: actions/checkout@v3
       with:
@@ -56,7 +64,7 @@ jobs:
 
     - name: Print input values and commit ID
       run: |
-        echo "Deploying to environment: ${{ github.event.inputs.environment }}"
+        # echo "Deploying to environment: ${{ github.event.inputs.environment }}"
         echo "Deploying version: ${{ github.event.inputs.version }}"
         echo "Git Commit ID: ${{ env.COMMIT_ID }}"  # Access the commit ID from the environment variable
         echo "Triggered by user: ${{ github.actor }}"  # Print the username who triggered the workflow
