@@ -159,9 +159,28 @@ jobs:
         # kubectl apply -f deployment.yaml
     - name: Save rollback history to Git repository
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+        # Check repository status to see untracked files or changes
+        git status
+        
+        # Ensure the rollback-history.txt file is created or modified
+        if [ -f rollback-history.txt ]; then
+          echo "rollback-history.txt exists, adding to Git..."
+        else
+          echo "rollback-history.txt not found, creating new file..."
+          # Create the file if it doesn't exist (for the sake of example)
+          echo "Commit: $ROLLBACK_COMMIT" > rollback-history.txt
+          echo "Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
+          echo "Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
+        fi
+        
+        # Add the rollback-history.txt file to Git index
         git add rollback-history.txt
+    
+        # Check if the file is staged
+        git status
+        
+        # Commit the changes with a message
         git commit -m "Update rollback history"
+    
+        # Push the changes back to the repository
         git push origin main  # Replace with your branch if needed
-    # Additional rollback or deployment steps can go here
