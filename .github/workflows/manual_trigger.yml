@@ -102,24 +102,7 @@ jobs:
           echo "No previous rollback found. Proceeding with the latest commit."
           ROLLBACK_COMMIT="HEAD"
         fi
-
-    - name: Rollback to specified commit
-      run: |
-        echo "Checking out commit ID: $ROLLBACK_COMMIT"
-        git checkout $ROLLBACK_COMMIT
         
-    - name: Rollback to specified commit (if any)
-      run: |
-        # If a commit_id is provided, use that to checkout the commit
-        if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
-          echo "Rolling back to commit ID: ${{ github.event.inputs.commit_id }}"
-          # git checkout ${{ github.event.inputs.commit_id }}  # Checkout the specified commit
-          echo "COMMIT_ID=${{ github.event.inputs.commit_id }}" >> $GITHUB_ENV
-          echo "Git Roll Back Commit ID: $COMMIT_ID"
-        else
-          echo "No commit ID provided. Using the latest commit: $COMMIT_ID"
-        fi
-
     - name: Print input values and commit ID
       run: |
         echo "Deploying to environment: ${{ github.event.inputs.environment }}"
@@ -167,21 +150,28 @@ jobs:
         git config user.name "${{ github.actor }}"
         git config user.email "${{ github.actor }}@users.noreply.github.com"
         
+        # Get the current commit ID and message
+        CURRENT_COMMIT=$(git rev-parse HEAD)
+        CURRENT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+        CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+
         # Create or update rollback-history.txt file
         if [ -f rollback-history.txt ]; then
           echo "rollback-history.txt exists, adding to Git..."
         else
           echo "rollback-history.txt not found, creating new file..."
-          echo "Commit: $ROLLBACK_COMMIT" > rollback-history.txt
-          echo "Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
-          echo "Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
         fi
+
+        # Log current deployment details and append date/time
+        echo "Date: $CURRENT_DATE" >> rollback-history.txt
+        echo "Current Commit: $CURRENT_COMMIT" >> rollback-history.txt
+        echo "Commit Message: $CURRENT_COMMIT_MESSAGE" >> rollback-history.txt
+        echo "Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
+        echo "Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
         
-        # Track the current state in the rollback history
-        # Add the current commit as the previous commit in the history
-        echo "Previous Commit: $(git rev-parse HEAD)" >> rollback-history.txt
-        echo "Previous Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
-        echo "Previous Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
+        # Track changes in the repository by using git diff (to show what changed)
+        CHANGES=$(git diff --name-status HEAD~1..HEAD)
+        echo "Changes: $CHANGES" >> rollback-history.txt
 
         # Add the rollback-history.txt file to Git index
         git add rollback-history.txt
