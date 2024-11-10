@@ -56,35 +56,71 @@ jobs:
           exit 1  # Fail the job if the user is not authorized
         fi
     
-    - name: Get Git commit ID
+    # - name: Get Git commit ID
+    #   run: |
+    #     # Retrieve the current commit ID
+    #     COMMIT_ID=$(git rev-parse HEAD)
+    #     echo "Git Commit ID: $COMMIT_ID"
+    #     echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
+    - name: Fetch all remote commits
       run: |
-        # Retrieve the current commit ID
-        COMMIT_ID=$(git rev-parse HEAD)
-        echo "Git Commit ID: $COMMIT_ID"
-        echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
-        
-    - name: Checkout and Validate specific commit if provided, or latest commit
+        # Fetch all branches and commits to ensure we have access to the commit history
+        git fetch --all
+        git fetch --tags
+
+    - name: Validate Commit ID (if provided)
+      id: validate_commit
       run: |
-        # If a commit_id is provided, validate that it is a valid commit hash
-        if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
-          COMMIT_ID="${{ github.event.inputs.commit_id }}"
-          echo "Validating commit ID: $COMMIT_ID"
-    
-          # Remove any leading or trailing whitespace
-          COMMIT_ID=$(echo $COMMIT_ID | xargs)
-    
-          # Validate if the commit ID is exactly 40 characters and contains only valid hexadecimal characters
-          if [[ ! "$COMMIT_ID" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Invalid commit ID: $COMMIT_ID. It must be a valid 40-character commit hash."
-            exit 1  # Exit if the commit ID is invalid
+        if [ -n "${{ github.event.inputs.commit_id }}" ]; then
+          echo "Checking if commit ID exists: ${{ github.event.inputs.commit_id }}"
+          
+          # Verify if the commit ID exists in the repository (in the main branch context)
+          git rev-parse --verify ${{ github.event.inputs.commit_id }} > /dev/null 2>&1
+          if [ $? -eq 0 ]; then
+            echo "Commit ID exists: ${{ github.event.inputs.commit_id }}"
           else
-            echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
-            echo "Git Roll back Commit ID: $COMMIT_ID"
-            git checkout ${{ env.COMMIT_ID }}
+            echo "Invalid commit ID: ${{ github.event.inputs.commit_id }}"
+            exit 1
           fi
         else
-          echo "No commit ID provided. Checking out the latest commit (HEAD)."
+          echo "No commit ID provided. Proceeding with the latest commit (HEAD)."
         fi
+
+    - name: Checkout specific commit or latest commit
+      run: |
+        if [ -n "${{ github.event.inputs.commit_id }}" ]; then
+          # If a commit ID is provided, checkout that commit
+          echo "Checking out the commit: ${{ github.event.inputs.commit_id }}"
+          git checkout ${{ github.event.inputs.commit_id }}
+        else
+          # If no commit ID is provided, checkout the latest commit (HEAD)
+          echo "No commit ID provided. Checking out the latest commit (HEAD)."
+          git checkout HEAD
+        fi
+
+        
+    # - name: Checkout and Validate specific commit if provided, or latest commit
+    #   run: |
+    #     # If a commit_id is provided, validate that it is a valid commit hash
+    #     if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
+    #       COMMIT_ID="${{ github.event.inputs.commit_id }}"
+    #       echo "Validating commit ID: $COMMIT_ID"
+    
+    #       # Remove any leading or trailing whitespace
+    #       COMMIT_ID=$(echo $COMMIT_ID | xargs)
+    
+    #       # Validate if the commit ID is exactly 40 characters and contains only valid hexadecimal characters
+    #       if [[ ! "$COMMIT_ID" =~ ^[0-9a-f]{40}$ ]]; then
+    #         echo "Invalid commit ID: $COMMIT_ID. It must be a valid 40-character commit hash."
+    #         exit 1  # Exit if the commit ID is invalid
+    #       else
+    #         echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
+    #         echo "Git Roll back Commit ID: $COMMIT_ID"
+    #         git checkout ${{ env.COMMIT_ID }}
+    #       fi
+    #     else
+    #       echo "No commit ID provided. Checking out the latest commit (HEAD)."
+    #     fi
       
    
     
