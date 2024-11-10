@@ -19,11 +19,20 @@ jobs:
     steps:
     - name: Check out repository
       uses: actions/checkout@v3
+      with:
+        ref: 'main'  # Always checkout the 'main' branch
+
+    - name: Get Git commit ID
+      run: |
+        COMMIT_ID=$(git rev-parse HEAD)
+        echo "Git Commit ID: $COMMIT_ID"
+        echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Set the commit ID as an environment variable
 
     - name: Print input values
       run: |
         echo "Deploying to environment: ${{ github.event.inputs.environment }}"
         echo "Deploying version: ${{ github.event.inputs.version }}"
+        echo "Deploying from branch: main"
+        echo "Git Commit ID: ${{ env.COMMIT_ID }}"  # Access the commit ID from the environment variable
 
-    # You can add additional steps to perform the actual deployment here
-    # based on the values provided by the inputs.
+    # Additional deployment steps can go here
