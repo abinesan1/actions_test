@@ -125,7 +125,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: aibinesan/flaskapp:latest
+        tags: aibinesan/flaskapp:${{ env.COMMIT_ID }}
         
     - name: deploying
       uses: appleboy/ssh-action@v0.1.8
@@ -139,7 +139,7 @@ jobs:
           docker image pull aibinesan/flaskapp:${{ env.COMMIT_ID }}
           docker container stop flask
           docker container rm flask
-          docker container run -d --name flask -p 80:5000 aibinesan/flaskapp
+          docker container run -d --name flask -p 80:5000 aibinesan/flaskapp:${{ env.COMMIT_ID }}
     - name: Deploy application (or run your deployment steps)
       run: |
         echo "Deploying application..."
