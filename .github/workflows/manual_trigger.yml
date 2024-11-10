@@ -54,10 +54,14 @@ jobs:
         if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
           COMMIT_ID="${{ github.event.inputs.commit_id }}"
           echo "Validating commit ID: $COMMIT_ID"
-          # Check if commit_id is a valid git commit hash (basic validation)
+    
+          # Remove any leading or trailing whitespace
+          COMMIT_ID=$(echo $COMMIT_ID | xargs)
+    
+          # Validate if the commit ID is exactly 40 characters and contains only valid hexadecimal characters
           if [[ ! "$COMMIT_ID" =~ ^[0-9a-f]{40}$ ]]; then
             echo "Invalid commit ID: $COMMIT_ID. It must be a valid 40-character commit hash."
-            exit 1
+            exit 1  # Exit if the commit ID is invalid
           fi
         fi
       
