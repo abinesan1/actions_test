@@ -39,6 +39,18 @@ jobs:
           echo "This workflow can only be triggered from the 'main' branch."
           exit 1
         fi
+    - name: Validate commit_id (if provided)
+      run: |
+        # If a commit_id is provided, validate that it is a valid commit hash
+        if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
+          COMMIT_ID="${{ github.event.inputs.commit_id }}"
+          echo "Validating commit ID: $COMMIT_ID"
+          # Check if commit_id is a valid git commit hash (basic validation)
+          if [[ ! "$COMMIT_ID" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid commit ID: $COMMIT_ID. It must be a valid 40-character commit hash."
+            exit 1
+          fi
+        fi
         
     - name: Checkout repository
       uses: actions/checkout@v3
