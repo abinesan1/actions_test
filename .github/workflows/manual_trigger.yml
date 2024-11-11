@@ -23,7 +23,13 @@ jobs:
     permissions:
       contents: write
     
-    steps:        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        # ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
+        ref: '${{ github.event.inputs.commit-id || "main" }}' 
+        
     - name: Print GitHub Actor (GitHub username)
       run: |
         echo "GitHub Username (actor): ${{ github.actor }}"
@@ -61,11 +67,7 @@ jobs:
       run: |
         echo "The final COMMIT_ID is: ${{ env.COMMIT_ID }}"
 
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        # ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
-        ref: '${{  env.COMMIT_ID || "main" }}' 
+    
         
     # - name: Checkout and Validate specific commit if provided, or latest commit
     #   run: |
