@@ -49,11 +49,11 @@ jobs:
     # Step 2: Set the COMMIT_ID environment variable
     - name: Get Git commit ID or use passed commit ID
       run: |
-        if [ -z "${{ github.event.inputs.commit-id }}" ]; then
+        if [ -z "${{ github.event.inputs.commit_id }}" ]; then
           COMMIT_ID=$(git rev-parse HEAD)  # Get current commit ID if no commit ID is passed
           echo "No commit ID passed, using current commit: $COMMIT_ID"
         else
-          COMMIT_ID="${{ github.event.inputs.commit-id }}"
+          COMMIT_ID="${{ github.event.inputs.commit_id }}"
           # Remove any leading or trailing whitespace
           COMMIT_ID=$(echo $COMMIT_ID | xargs)
           echo "Using passed commit ID: $COMMIT_ID"
