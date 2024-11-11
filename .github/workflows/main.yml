@@ -1,10 +1,25 @@
 name: Docker Image build
-
 on:
-  push:
-    branches: [ "main1" ]
-  # pull_request:
-  #  # branches: [ "mai" ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which environment to deploy to (e.g., staging or production)'
+        required: true
+        default: 'staging'
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+      commit_id:
+        description: 'Commit ID to rollback to (leave empty for the latest commit)'
+        required: false
+        default: ''  # If not specified, it will deploy the latest commit
+
+# on:
+#   push:
+#     branches: [ "main1" ]
+#   # pull_request:
+#   #  # branches: [ "mai" ]
 
 jobs:
 
