@@ -23,27 +23,10 @@ jobs:
     permissions:
       contents: write
     
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
-      
+    steps:        
     - name: Print GitHub Actor (GitHub username)
       run: |
         echo "GitHub Username (actor): ${{ github.actor }}"
-
-    # - name: Fetch Git user name from Git config
-    #   run: |
-    #     # Fetch the configured Git user name
-    #     GIT_USER_NAME=$(git config user.name)
-    #     echo "Git User Name: $GIT_USER_NAME"
-    
-    # - name: Print both GitHub username and Git user name
-    #   run: |
-    #     # Print both the GitHub actor and the Git user name
-    #     echo "GitHub Username (actor): ${{ github.actor }}"
-    #     echo "Git User Name: $GIT_USER_NAME"
     
     - name: Check if user is authorized
       run: |
@@ -62,42 +45,27 @@ jobs:
     #     COMMIT_ID=$(git rev-parse HEAD)
     #     echo "Git Commit ID: $COMMIT_ID"
     #     echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
-    - name: Fetch all remote commits
+        
+    - name: Get Git commit ID or use passed commit ID
       run: |
-        # Fetch all branches and commits to ensure we have access to the commit history
-        git fetch --all
-        git fetch --tags
-
-    - name: Validate Commit ID (if provided)
-      id: validate_commit
-      run: |
-        if [ -n "${{ github.event.inputs.commit_id }}" ]; then
-          echo "Checking if commit ID exists: ${{ github.event.inputs.commit_id }}"
-          
-          # Verify if the commit ID exists in the repository (in the main branch context)
-          git rev-parse --verify ${{ github.event.inputs.commit_id }} > /dev/null 2>&1
-          if [ $? -eq 0 ]; then
-            echo "Commit ID exists: ${{ github.event.inputs.commit_id }}"
-          else
-            echo "Invalid commit ID: ${{ github.event.inputs.commit_id }}"
-            exit 1
-          fi
+        if [ -z "${{ github.event.inputs.commit-id }}" ]; then
+          COMMIT_ID=$(git rev-parse HEAD)
+          echo "No commit ID passed, using current commit: $COMMIT_ID"
         else
-          echo "No commit ID provided. Proceeding with the latest commit (HEAD)."
+          COMMIT_ID="${{ github.event.inputs.commit-id }}"
+          echo "Using passed commit ID: $COMMIT_ID"
         fi
+        echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV
 
-    - name: Checkout specific commit or latest commit
+    - name: Display Commit ID
       run: |
-        if [ -n "${{ github.event.inputs.commit_id }}" ]; then
-          # If a commit ID is provided, checkout that commit
-          echo "Checking out the commit: ${{ github.event.inputs.commit_id }}"
-          git checkout ${{ github.event.inputs.commit_id }}
-        else
-          # If no commit ID is provided, checkout the latest commit (HEAD)
-          echo "No commit ID provided. Checking out the latest commit (HEAD)."
-          git checkout HEAD
-        fi
+        echo "The final COMMIT_ID is: ${{ env.COMMIT_ID }}"
 
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        # ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
+        ref: '${{  env.COMMIT_ID || "main" }}' 
         
     # - name: Checkout and Validate specific commit if provided, or latest commit
     #   run: |
@@ -161,12 +129,12 @@ jobs:
     #       ROLLBACK_COMMIT="HEAD"
     #     fi
         
-    - name: Print input values and commit ID
-      run: |
-        echo "Deploying to environment: ${{ github.event.inputs.environment }}"
-        echo "Deploying version: ${{ github.event.inputs.version }}"
-        echo "Git Commit ID: ${{ env.COMMIT_ID }}"  # Access the commit ID from the environment variable
-        echo "Triggered by user: ${{ github.actor }}"  # Print the username who triggered the workflow
+    # - name: Print input values and commit ID
+    #   run: |
+    #     echo "Deploying to environment: ${{ github.event.inputs.environment }}"
+    #     echo "Deploying version: ${{ github.event.inputs.version }}"
+    #     echo "Git Commit ID: ${{ env.COMMIT_ID }}"  # Access the commit ID from the environment variable
+    #     echo "Triggered by user: ${{ github.actor }}"  # Print the username who triggered the workflow
         
     - name: login to hub  
       uses: docker/login-action@v2
@@ -179,7 +147,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: aibinesan/flaskapp:${{ github.sha }}        
+        tags: aibinesan/flaskapp:${{ env.COMMIT_ID }}      
     - name: deploying
       uses: appleboy/ssh-action@v0.1.8
       with:
