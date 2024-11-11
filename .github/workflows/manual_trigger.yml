@@ -23,13 +23,7 @@ jobs:
     permissions:
       contents: write
     
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        # ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
-        ref: '${{ github.event.inputs.commit-id || "main" }}' 
-        
+    steps:        
     - name: Print GitHub Actor (GitHub username)
       run: |
         echo "GitHub Username (actor): ${{ github.actor }}"
@@ -44,25 +38,29 @@ jobs:
           echo "You are not authorized to trigger this workflow."
           exit 1  # Fail the job if the user is not authorized
         fi
-    
-    # - name: Get Git commit ID
-    #   run: |
-    #     # Retrieve the current commit ID
-    #     COMMIT_ID=$(git rev-parse HEAD)
-    #     echo "Git Commit ID: $COMMIT_ID"
-    #     echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
-        
+  
+    # Step 1: Checkout the specific commit (either passed commit-id or latest commit)
+    - name: Checkout code with specific commit ID
+      uses: actions/checkout@v3
+      with:
+        # Use commit-id passed from workflow_dispatch or fallback to 'main'
+        ref: ${{ github.event.inputs.commit-id || 'main' }}
+
+    # Step 2: Set the COMMIT_ID environment variable
     - name: Get Git commit ID or use passed commit ID
       run: |
         if [ -z "${{ github.event.inputs.commit-id }}" ]; then
-          COMMIT_ID=$(git rev-parse HEAD)
+          COMMIT_ID=$(git rev-parse HEAD)  # Get current commit ID if no commit ID is passed
           echo "No commit ID passed, using current commit: $COMMIT_ID"
         else
           COMMIT_ID="${{ github.event.inputs.commit-id }}"
+          # Remove any leading or trailing whitespace
+          COMMIT_ID=$(echo $COMMIT_ID | xargs)
           echo "Using passed commit ID: $COMMIT_ID"
         fi
-        echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV
+        echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
 
+        
     - name: Display Commit ID
       run: |
         echo "The final COMMIT_ID is: ${{ env.COMMIT_ID }}"
@@ -91,45 +89,6 @@ jobs:
     #     else
     #       echo "No commit ID provided. Checking out the latest commit (HEAD)."
     #     fi
-      
-   
-    
-        
-    # - name: Checkout specific commit if provided, or latest commit
-    #   run: |
-    #     if [ -n "${{ github.event.inputs.commit_id }}" ]; then
-    #       echo "Checking out the commit ID: ${{ github.event.inputs.commit_id }}"
-    #       COMMIT_ID=$(echo $COMMIT_ID | xargs)
-    #       echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
-    #       git checkout ${{ github.event.inputs.commit_id }}
-    #       echo "COMMIT_ID=${{ github.event.inputs.commit_id }}" >> $GITHUB_ENV  # Store commit ID in environment variable
-    #       echo "Git Roll back Commit ID: $COMMIT_ID"
-    #     else
-    #       echo "No commit ID provided. Checking out the latest commit (HEAD)."
-    #     fi
-        
-    # - name: Retrieve last deployment and rollback details (if any)
-    #   id: rollback_history
-    #   run: |
-    #     if [[ -f rollback-history.txt ]]; then
-    #       LAST_ROLLBACK_COMMIT=$(head -n 1 rollback-history.txt)
-    #       LAST_ROLLBACK_ENVIRONMENT=$(sed -n '2p' rollback-history.txt)
-    #       LAST_ROLLBACK_VERSION=$(sed -n '3p' rollback-history.txt)
-    #       echo "Last rollback commit: $LAST_ROLLBACK_COMMIT"
-    #       echo "Last rollback environment: $LAST_ROLLBACK_ENVIRONMENT"
-    #       echo "Last rollback version: $LAST_ROLLBACK_VERSION"
-          
-    #       if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
-    #         echo "Rolling back to provided commit ID: ${{ github.event.inputs.commit_id }}"
-    #         ROLLBACK_COMMIT="${{ github.event.inputs.commit_id }}"
-    #       else
-    #         echo "Rolling back to last successful commit: $LAST_ROLLBACK_COMMIT"
-    #         ROLLBACK_COMMIT="$LAST_ROLLBACK_COMMIT"
-    #       fi
-    #     else
-    #       echo "No previous rollback found. Proceeding with the latest commit."
-    #       ROLLBACK_COMMIT="HEAD"
-    #     fi
         
     # - name: Print input values and commit ID
     #   run: |
@@ -149,7 +108,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: aibinesan/flaskapp:${{ env.COMMIT_ID }}      
+        tags: aibinesan/flaskapp:$COMMIT_ID     
     - name: deploying
       uses: appleboy/ssh-action@v0.1.8
       with:
