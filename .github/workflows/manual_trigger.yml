@@ -44,7 +44,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         # Use commit-id passed from workflow_dispatch or fallback to 'main'
-        ref: ${{ github.event.inputs.commit-id || 'main' }}
+        ref: ${{ github.event.inputs.commit_id || 'main' }}
 
     # Step 2: Set the COMMIT_ID environment variable
     - name: Get Git commit ID or use passed commit ID
