@@ -1,0 +1,185 @@
+name: Workflow manul
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which environment to deploy to (e.g., staging or production)'
+        required: true
+        default: 'staging'
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+      commit_id:
+        description: 'Commit ID to rollback to (leave empty for the latest commit)'
+        required: false
+        default: ''  # If not specified, it will deploy the latest commit
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Print GitHub Actor (GitHub username)
+      run: |
+        echo "GitHub Username (actor): ${{ github.actor }}"
+
+    # - name: Fetch Git user name from Git config
+    #   run: |
+    #     # Fetch the configured Git user name
+    #     GIT_USER_NAME=$(git config user.name)
+    #     echo "Git User Name: $GIT_USER_NAME"
+    
+    # - name: Print both GitHub username and Git user name
+    #   run: |
+    #     # Print both the GitHub actor and the Git user name
+    #     echo "GitHub Username (actor): ${{ github.actor }}"
+    #     echo "Git User Name: $GIT_USER_NAME"
+    
+    - name: Check if user is authorized
+      run: |
+        # Define allowed users (GitHub usernames)
+        ALLOWED_USERS=("abinesan1" "user2" "user3")
+        
+        # Check if the current user (github.actor) is in the allowed users list
+        if [[ ! " ${ALLOWED_USERS[@]} " =~ " ${GITHUB_ACTOR} " ]]; then
+          echo "You are not authorized to trigger this workflow."
+          exit 1  # Fail the job if the user is not authorized
+        fi
+        
+    - name: Validate commit_id (if provided)
+      run: |
+        # If a commit_id is provided, validate that it is a valid commit hash
+        if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
+          COMMIT_ID="${{ github.event.inputs.commit_id }}"
+          echo "Validating commit ID: $COMMIT_ID"
+    
+          # Remove any leading or trailing whitespace
+          COMMIT_ID=$(echo $COMMIT_ID | xargs)
+    
+          # Validate if the commit ID is exactly 40 characters and contains only valid hexadecimal characters
+          if [[ ! "$COMMIT_ID" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid commit ID: $COMMIT_ID. It must be a valid 40-character commit hash."
+            exit 1  # Exit if the commit ID is invalid
+          fi
+        fi
+      
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        ref: 'main'  # Checkout the 'main' branch (you can modify this if using a different branch)
+
+    - name: Get Git commit ID
+      run: |
+        # Retrieve the current commit ID
+        COMMIT_ID=$(git rev-parse HEAD)
+        echo "Git Commit ID: $COMMIT_ID"
+        echo "COMMIT_ID=$COMMIT_ID" >> $GITHUB_ENV  # Store commit ID in environment variable
+        
+    - name: Retrieve last deployment and rollback details (if any)
+      id: rollback_history
+      run: |
+        if [[ -f rollback-history.txt ]]; then
+          LAST_ROLLBACK_COMMIT=$(head -n 1 rollback-history.txt)
+          LAST_ROLLBACK_ENVIRONMENT=$(sed -n '2p' rollback-history.txt)
+          LAST_ROLLBACK_VERSION=$(sed -n '3p' rollback-history.txt)
+          echo "Last rollback commit: $LAST_ROLLBACK_COMMIT"
+          echo "Last rollback environment: $LAST_ROLLBACK_ENVIRONMENT"
+          echo "Last rollback version: $LAST_ROLLBACK_VERSION"
+          
+          if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
+            echo "Rolling back to provided commit ID: ${{ github.event.inputs.commit_id }}"
+            ROLLBACK_COMMIT="${{ github.event.inputs.commit_id }}"
+          else
+            echo "Rolling back to last successful commit: $LAST_ROLLBACK_COMMIT"
+            ROLLBACK_COMMIT="$LAST_ROLLBACK_COMMIT"
+          fi
+        else
+          echo "No previous rollback found. Proceeding with the latest commit."
+          ROLLBACK_COMMIT="HEAD"
+        fi
+
+    - name: Rollback to specified commit
+      run: |
+        echo "Checking out commit ID: $ROLLBACK_COMMIT"
+        git checkout $ROLLBACK_COMMIT
+        
+    - name: Rollback to specified commit (if any)
+      run: |
+        # If a commit_id is provided, use that to checkout the commit
+        if [[ -n "${{ github.event.inputs.commit_id }}" ]]; then
+          echo "Rolling back to commit ID: ${{ github.event.inputs.commit_id }}"
+          # git checkout ${{ github.event.inputs.commit_id }}  # Checkout the specified commit
+          echo "COMMIT_ID=${{ github.event.inputs.commit_id }}" >> $GITHUB_ENV
+          echo "Git Roll Back Commit ID: $COMMIT_ID"
+        else
+          echo "No commit ID provided. Using the latest commit: $COMMIT_ID"
+        fi
+
+    - name: Print input values and commit ID
+      run: |
+        echo "Deploying to environment: ${{ github.event.inputs.environment }}"
+        echo "Deploying version: ${{ github.event.inputs.version }}"
+        echo "Git Commit ID: ${{ env.COMMIT_ID }}"  # Access the commit ID from the environment variable
+        echo "Triggered by user: ${{ github.actor }}"  # Print the username who triggered the workflow
+        
+    - name: login to hub  
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: aibinesan/flaskapp:${{ env.COMMIT_ID }}
+        
+    - name: deploying
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        password: ${{ secrets.SSH_PASSWORD }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          # sudo mkdir test.txt
+          docker image pull aibinesan/flaskapp:${{ env.COMMIT_ID }}
+          docker container stop flask
+          docker container rm flask
+          docker container run -d --name flask -p 80:5000 aibinesan/flaskapp:${{ env.COMMIT_ID }}
+    - name: Deploy application (or run your deployment steps)
+      run: |
+        echo "Deploying application..."
+        # Add your deployment commands here, e.g.:
+        # npm install
+        # npm run build
+        # kubectl apply -f deployment.yaml
+    - name: Save rollback history to Git repository
+      run: |
+        # Set the committer's name and email dynamically based on the GitHub context
+        git config user.name "${{ github.actor }}"
+        git config user.email "${{ github.actor }}@users.noreply.github.com"
+        
+        # Ensure the rollback-history.txt file is created or modified
+        if [ -f rollback-history.txt ]; then
+          echo "rollback-history.txt exists, adding to Git..."
+        else
+          echo "rollback-history.txt not found, creating new file..."
+          echo "Commit: $ROLLBACK_COMMIT" > rollback-history.txt
+          echo "Environment: ${{ github.event.inputs.environment }}" >> rollback-history.txt
+          echo "Version: ${{ github.event.inputs.version }}" >> rollback-history.txt
+        fi
+        
+        # Add the rollback-history.txt file to Git index
+        git add rollback-history.txt
+
+        # Check if the file is staged
+        git status
+        
+        # Commit the changes with a message
+        git commit -m "Update rollback history"
+
+        # Push the changes back to the repository
+        git push origin main  # Replace with your branch if needed
