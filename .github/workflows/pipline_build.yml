@@ -24,22 +24,25 @@ on:
 
 jobs:
   login:
-    name: Login to Docker Hub
+    name: Docker Login
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          
+
       - name: Cache Docker credentials
         uses: actions/cache@v3
         with:
-          path: /tmp/.docker
-          key: ${{ runner.os }}-docker-login-${{ secrets.DOCKER_USERNAME }}
+          path: /tmp/.docker  # This is where Docker stores the login credentials
+          key: ${{ runner.os }}-docker-login-${{ secrets.DOCKER_USERNAME }}  # Cache key
           restore-keys: |
-            ${{ runner.os }}-docker-login-
+            ${{ runner.os }}-docker-login-  # Restore key pattern to help find a similar cache
 
   Dockerbuildpush:
     name: Build and Push Docker Image
