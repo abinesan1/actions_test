@@ -1,0 +1,63 @@
+name: Docker Image build
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which environment to deploy to (e.g., staging or production)'
+        required: true
+        default: 'main'
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+      commit_id:
+        description: 'Commit ID to rollback to (leave empty for the latest commit)'
+        required: false
+        default: ''  # If not specified, it will deploy the latest commit
+
+# on:
+#   push:
+#     branches: [ "main1" ]
+#   # pull_request:
+#   #  # branches: [ "mai" ]
+
+jobs:
+
+  build:
+    name: Docker Authenticate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+  
+      - name: login to hub  
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+          
+  Dockerbuildpush:
+      name: Push image to docker repo
+      runs-on: ubuntu-latest
+      steps:            
+        - name: Build and push
+          uses: docker/build-push-action@v4
+          with:
+            context: .
+            push: true
+            tags: aibinesan/flaskapp:latest    
+          
+      # - name: deploying
+      #   uses: appleboy/ssh-action@v0.1.8
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USER }}
+      #     password: ${{ secrets.SSH_PASSWORD }}
+      #     port: ${{ secrets.SSH_PORT }}
+      #     script: |
+      #       # sudo mkdir test.txt
+      #       docker image pull aibinesan/flaskapp:latest
+      #       docker container stop flask
+      #       docker container rm flask
+      #       docker container run -d --name flask -p 80:5000 aibinesan/flaskapp
