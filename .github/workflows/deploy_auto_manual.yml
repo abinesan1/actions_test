@@ -1,0 +1,39 @@
+name: Multi-Project Deployment manual and auto 
+
+on:
+  push:
+    paths:
+      - 'project/client1/deploy.sh'
+      - 'project/client2/deploy.sh'
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Select project to deploy'
+        required: true
+        type: choice
+        options:
+          - client1
+          - client2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+
+      - name: Deploy client 1
+        if: contains(steps.changed-files.outputs.all_modified_files, 'client1/')
+        run: |
+          echo "Deploying cleint 1..."
+          ./project/cleint1/deploy.sh
+
+      - name: Deploy client 2
+        if: contains(steps.changed-files.outputs.all_modified_files, 'client2/')
+        run: |
+          echo "Deploying cleint 2..."
+          ./project/cleint2/deploy.sh
