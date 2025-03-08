@@ -1,4 +1,4 @@
-name: Multi-Project Deployment manual and auto
+name: File Multi-Project Deployment manual and auto
 
 on:
   push:
