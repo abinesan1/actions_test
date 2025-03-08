@@ -1,0 +1,50 @@
+name: Multi-Project Deployment manual and auto
+
+# on:
+#   push:
+#     paths:
+#       - 'project/*/deploy.sh'
+#   workflow_dispatch:
+#     inputs:
+#       project:
+#         description: 'Select project to deploy'
+#         required: true
+#         type: choice
+#         options:
+#           - client1
+#           - client2
+#           - client3
+#           - client4
+#           - client5
+#           - client6
+#           - client7
+#           - client8
+#           - client9
+#           - client10
+#           # Add more clients as needed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+
+      - name: Set execute permissions for deploy scripts
+        run: |
+          find ./project -name 'deploy.sh' -exec chmod +x {} \;
+
+      - name: Deploy modified clients
+        run: |
+          # Extract the list of modified clients
+          modified_clients=$(echo "${{ steps.changed-files.outputs.all_modified_files }}" | grep -o 'project/[^/]\+/deploy.sh' | sed 's|/deploy.sh||')
+
+          # Loop through each modified client and deploy
+          for client in $modified_clients; do
+            echo "Deploying $client..."
+            ./$client/deploy.sh
+          done
