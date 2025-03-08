@@ -31,13 +31,13 @@ jobs:
         run: |
           # Get the list of modified files and extract the clients
           clients=$(echo "${{ steps.changed-files.outputs.all_modified_files }}" | grep -o 'project/[^/]\+/deploy.sh' | sed 's|/deploy.sh||')
-
+          echo '$clients .......'
           # Loop through each client and deploy
           for client in $clients; do
             # Check if the client exists in the clients.txt list
             if echo "$CLIENTS" | grep -q "\b$client\b"; then
               echo "Deploying $client..."
-              ./$client/deploy.sh
+              ./project/$client/deploy.sh
             else
               echo "Client $client not found in the clients list."
             fi
