@@ -1,0 +1,44 @@
+name: Manual Deployment - Select clients to deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Enter client(s) to deploy (comma-separated, e.g., client1,client2)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read client list from clients.txt
+        id: read_clients
+        run: |
+          # Read the clients from the clients.txt file and save them into an environment variable
+          CLIENTS=$(cat ./project/deploy/auto/clients.txt | tr '\n' ',' | sed 's/,$//')
+          echo "CLIENTS=$CLIENTS" >> $GITHUB_ENV
+          echo "$CLIENTS"
+
+      - name: Set execute permissions for deploy scripts
+        run: |
+          find ./project -name 'deploy.sh' -exec chmod +x {} \;
+
+      - name: Deploy manually selected clients
+        run: |
+          # Get the clients input from the manual trigger
+          clients="${{ github.event.inputs.project }}"
+          echo $clients
+          # Loop through each client and deploy
+          for client in $clients; do
+            # Check if the client exists in the clients.txt list
+            if echo "$CLIENTS" | grep -q "\b$client\b"; then
+              echo "Deploying $client..."
+              ./$client/deploy.sh
+            else
+              echo "Client $client not found in the clients list."
+            fi
+          done
