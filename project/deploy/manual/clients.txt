@@ -1,2 +1,2 @@
 client1
-clinet2
+client2
