@@ -1,1 +1,1 @@
-echo "Deploying client1...new"
+echo "Deploying client1.............."
