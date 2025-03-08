@@ -1,15 +1,9 @@
-name: File Multi-Project Deployment manual and auto
+name: Auto Deployment - Deploy based on changed files
 
 on:
   push:
     paths:
       - 'project/*/deploy.sh'
-  workflow_dispatch:
-    inputs:
-      project:
-        description: 'Select project(s) to deploy (comma separated)'
-        required: false
-        type: string
 
 jobs:
   deploy:
@@ -18,31 +12,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Determine changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+
       - name: Read client list from clients.txt
         id: read_clients
         run: |
           # Read the clients from the clients.txt file and save them into an environment variable
-          CLIENTS=$(cat ./project/deploy/clients.txt | tr '\n' ',' | sed 's/,$//')
+          CLIENTS=$(cat ./project/deploy/auto/clients.txt | tr '\n' ',' | sed 's/,$//')
           echo "CLIENTS=$CLIENTS" >> $GITHUB_ENV
-
-      - name: Determine changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v42
 
       - name: Set execute permissions for deploy scripts
         run: |
           find ./project -name 'deploy.sh' -exec chmod +x {} \;
 
-      - name: Deploy modified clients or manually selected clients
+      - name: Deploy modified clients
         run: |
-          # If triggered manually with specific clients, deploy those
-          if [[ "${{ github.event.inputs.project }}" != "" ]]; then
-            # Manual trigger with specific clients
-            clients="${{ github.event.inputs.project }}"
-          else
-            # Automatic trigger based on changed files
-            clients=$(echo "${{ steps.changed-files.outputs.all_modified_files }}" | grep -o 'project/[^/]\+/deploy.sh' | sed 's|/deploy.sh||')
-          fi
+          # Get the list of modified files and extract the clients
+          clients=$(echo "${{ steps.changed-files.outputs.all_modified_files }}" | grep -o 'project/[^/]\+/deploy.sh' | sed 's|/deploy.sh||')
 
           # Loop through each client and deploy
           for client in $clients; do
