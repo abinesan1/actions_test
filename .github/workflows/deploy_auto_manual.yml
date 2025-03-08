@@ -27,13 +27,13 @@ jobs:
         uses: tj-actions/changed-files@v42
 
       - name: Deploy client 1
-        if: contains(steps.changed-files.outputs.all_modified_files, 'client1/')
+        if: contains(steps.changed-files.outputs.all_modified_files, 'project/client1/')
         run: |
           echo "Deploying cleint 1..."
           ./project/cleint1/deploy.sh
 
       - name: Deploy client 2
-        if: contains(steps.changed-files.outputs.all_modified_files, 'client2/')
+        if: contains(steps.changed-files.outputs.all_modified_files, 'project/client2/')
         run: |
           echo "Deploying cleint 2..."
           ./project/cleint2/deploy.sh
