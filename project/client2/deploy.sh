@@ -1,1 +1,1 @@
-echo "Deploying client2...... neeee.ddfd....."
+echo "Deploying client2..dfdfd.."
