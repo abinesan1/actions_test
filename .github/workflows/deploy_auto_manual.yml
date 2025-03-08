@@ -1,19 +1,19 @@
 name: Multi-Project Deployment manual and auto 
 
-on:
-  push:
-    paths:
-      - 'project/client1/deploy.sh'
-      - 'project/client2/deploy.sh'
-  workflow_dispatch:
-    inputs:
-      project:
-        description: 'Select project to deploy'
-        required: true
-        type: choice
-        options:
-          - client1
-          - client2
+# on:
+#   push:
+#     paths:
+#       - 'project/client1/deploy.sh'
+#       - 'project/client2/deploy.sh'
+#   workflow_dispatch:
+#     inputs:
+#       project:
+#         description: 'Select project to deploy'
+#         required: true
+#         type: choice
+#         options:
+#           - client1
+#           - client2
 
 jobs:
   deploy:
