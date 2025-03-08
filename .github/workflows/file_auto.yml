@@ -38,7 +38,7 @@ jobs:
             # Check if the client exists in the clients.txt list
             if echo "$CLIENTS" | grep -q "\b$client\b"; then
               echo "Deploying $client..."
-              ./project/$client/deploy.sh
+              ./$client/deploy.sh
             else
               echo "Client $client not found in the clients list."
             fi
