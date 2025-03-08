@@ -29,11 +29,13 @@ jobs:
       - name: Deploy client 1
         if: contains(steps.changed-files.outputs.all_modified_files, 'client1/')
         run: |
+          chmod +x ./project/client1/deploy.sh
           echo "Deploying cleint 1..."
           ./project/client1/deploy.sh
 
       - name: Deploy client 2
         if: contains(steps.changed-files.outputs.all_modified_files, 'client2/')
         run: |
+          chmod +x ./project/client2/deploy.sh
           echo "Deploying cleint 2..."
           ./project/client2/deploy.sh
