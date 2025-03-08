@@ -30,7 +30,7 @@ jobs:
         if: contains(steps.changed-files.outputs.all_modified_files, 'client1/')
         run: |
           echo "Deploying cleint 1..."
-          ./project/cleint1/deploy.sh
+          ./project/client1/deploy.sh
 
       - name: Deploy client 2
         if: contains(steps.changed-files.outputs.all_modified_files, 'client2/')
