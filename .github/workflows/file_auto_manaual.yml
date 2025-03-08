@@ -22,7 +22,7 @@ jobs:
         id: read_clients
         run: |
           # Read the clients from the clients.txt file and save them into an environment variable
-          CLIENTS=$(cat /project/deploy/clients.txt | tr '\n' ',' | sed 's/,$//')
+          CLIENTS=$(cat ./project/deploy/clients.txt | tr '\n' ',' | sed 's/,$//')
           echo "CLIENTS=$CLIENTS" >> $GITHUB_ENV
 
       - name: Determine changed files
