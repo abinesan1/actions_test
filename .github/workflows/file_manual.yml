@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Enter client(s) to deploy (comma-separated, e.g., client1,client2)'
-        required: true
+        description: 'Enter client(s) to deploy (comma-separated, e.g., client1,client2). Leave empty to deploy all from clients.txt.'
+        required: false
         type: string
 
 jobs:
@@ -19,25 +19,29 @@ jobs:
         id: read_clients
         run: |
           # Read the clients from the clients.txt file and save them into an environment variable
-          CLIENTS=$(cat ./project/deploy/auto/clients.txt | tr '\n' ',' | sed 's/,$//')
+          CLIENTS=$(cat ./project/deploy/manual/clients.txt | tr '\n' ',' | sed 's/,$//')
           echo "CLIENTS=$CLIENTS" >> $GITHUB_ENV
-          echo "$CLIENTS"
 
       - name: Set execute permissions for deploy scripts
         run: |
           find ./project -name 'deploy.sh' -exec chmod +x {} \;
 
-      - name: Deploy manually selected clients
+      - name: Deploy manually selected clients or all from clients.txt
         run: |
-          # Get the clients input from the manual trigger
-          clients="${{ github.event.inputs.project }}"
+          # If project input is provided, use it; otherwise, use the clients from clients.txt
+          if [[ "${{ github.event.inputs.project }}" != "" ]]; then
+            clients="${{ github.event.inputs.project }}"
+          else
+            # If no input is provided, deploy all clients from the clients.txt list
+            clients="$CLIENTS"
+          fi
           echo $clients
           # Loop through each client and deploy
-          for client in $clients; do
+          for client in $(echo $clients | tr ',' '\n'); do
             # Check if the client exists in the clients.txt list
             if echo "$CLIENTS" | grep -q "\b$client\b"; then
               echo "Deploying $client..."
-              ./$client/deploy.sh
+              ./project/$client/deploy.sh
             else
               echo "Client $client not found in the clients list."
             fi
