@@ -22,6 +22,7 @@ jobs:
           # Read the clients from the clients.txt file and save them into an environment variable
           CLIENTS=$(cat ./project/deploy/auto/clients.txt | tr '\n' ',' | sed 's/,$//')
           echo "CLIENTS=$CLIENTS" >> $GITHUB_ENV
+          echo "$CLIENTS"
 
       - name: Set execute permissions for deploy scripts
         run: |
@@ -31,7 +32,7 @@ jobs:
         run: |
           # Get the list of modified files and extract the clients
           clients=$(echo "${{ steps.changed-files.outputs.all_modified_files }}" | grep -o 'project/[^/]\+/deploy.sh' | sed 's|/deploy.sh||')
-          echo '$clients .......'
+          echo $clients
           # Loop through each client and deploy
           for client in $clients; do
             # Check if the client exists in the clients.txt list
