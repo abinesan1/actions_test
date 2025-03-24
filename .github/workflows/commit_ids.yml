@@ -19,7 +19,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-            ref: ${{ github.event.inputs.environment }}
+            ref: ${{ github.event.inputs.repo_name }}
         
       - name: Get current branch
         run: |
@@ -32,7 +32,8 @@ jobs:
           COMMIT_ID=$(git rev-parse HEAD)
           echo "Commit ID: $COMMIT_ID"
           echo "::set-output name=commit_id::$COMMIT_ID"
-      
+          echo "Current Commit ID is: ${{ github.sha }}"
+
       - name: Save commit ID to a file inside logs folder
         run: |
           echo "Commit ID: $COMMIT_ID" >> commit-history/commit_ids.txt
@@ -46,9 +47,4 @@ jobs:
       - name: List repositories and display message
         run: |
           echo "You have selected to trigger repository: ${{ github.event.inputs.repo_name }}"
-
-      - name: Output current commit ID
-        run: |
-          echo "Current Commit ID is: ${{ github.sha }}"
-          echo "Current Commit ID v is: $COMMIT_ID"
 
