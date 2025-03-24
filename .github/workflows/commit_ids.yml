@@ -1,0 +1,54 @@
+name: Git Action for Repo Trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_name:
+        description: 'Select Repository to Trigger'
+        required: true
+        type: choice
+        options:
+          - main
+          - dev
+
+jobs:
+  trigger_commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+            ref: ${{ github.event.inputs.environment }}
+        
+      - name: Get current branch
+        run: |
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "The currently checked out branch is: $CURRENT_BRANCH"
+  
+      - name: Get the current commit ID
+        id: commit_id
+        run: |
+          COMMIT_ID=$(git rev-parse HEAD)
+          echo "Commit ID: $COMMIT_ID"
+          echo "::set-output name=commit_id::$COMMIT_ID"
+      
+      - name: Save commit ID to a file inside logs folder
+        run: |
+          echo "Commit ID: $COMMIT_ID" >> commit-history/commit_ids.txt
+
+      - name: Commit and push commit_ids.txt to the logs folder
+        run: |
+          git add commit-history/commit_ids.txt
+          git commit -m "Add commit ID to commit-history/commit_ids.txt"
+          git push origin HEAD
+
+      - name: List repositories and display message
+        run: |
+          echo "You have selected to trigger repository: ${{ github.event.inputs.repo_name }}"
+
+      - name: Output current commit ID
+        run: |
+          echo "Current Commit ID is: ${{ github.sha }}"
+          echo "Current Commit ID v is: $COMMIT_ID"
+
