@@ -25,6 +25,11 @@ jobs:
         run: |
           CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
           echo "The currently checked out branch is: $CURRENT_BRANCH"
+          
+      - name: Set Git identity
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
   
       - name: Get the current commit ID
         id: commit_id
