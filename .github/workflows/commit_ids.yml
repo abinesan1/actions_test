@@ -34,14 +34,11 @@ jobs:
       - name: Get the current commit ID
         id: commit_id
         run: |
-          COMMIT_ID=$(git rev-parse HEAD)
-          echo "Commit ID: $COMMIT_ID"
-          echo "::set-output name=commit_id::$COMMIT_ID"
-          echo "Current Commit ID is: ${{ github.sha }}"
+          echo "The commit ID is ${{ github.sha }}"
 
       - name: Save commit ID to a file inside logs folder
         run: |
-          echo "Commit ID: $COMMIT_ID" >> commit-history/commit_ids.txt
+          echo "Commit ID:${{ github.sha }} >> commit-history/commit_ids.txt
 
       - name: Commit and push commit_ids.txt to the logs folder
         run: |
