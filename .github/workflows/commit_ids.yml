@@ -38,7 +38,7 @@ jobs:
 
       - name: Save commit ID to a file inside logs folder
         run: |
-          echo "Commit ID:${{ github.sha }} >> commit-history/commit_ids.txt
+          echo "Commit ID:${{ github.sha }}" >> commit-history/commit_ids.txt
 
       - name: Commit and push commit_ids.txt to the logs folder
         run: |
